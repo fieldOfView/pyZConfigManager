@@ -45,5 +45,5 @@ Next, clone pyZConfigManager somewhere:
 > git clone https://github.com/fieldOfView/pyZConfigManager.git
 ```
 Or just download it here:
-https://github.com/fieldOfView/pyZOSC/archive/master.zip
+https://github.com/fieldOfView/pyZConfigManager/archive/master.zip
 
