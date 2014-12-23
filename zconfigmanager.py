@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+from argparse import ArgumentParser
 from zocp import ZOCP
 import logging
 import socket
@@ -23,6 +24,7 @@ if __name__ == '__main__':
     z.on_peer_enter = on_peer_enter
     z.set_name("ConfigManager@%s" % socket.gethostname())
     z.start()
+    print("Discovering ZOCP network...")
     start = time.time()
     while (time.time() - start) < 0.5:
         z.run_once(0)
@@ -32,7 +34,7 @@ if __name__ == '__main__':
     for peer, capabilities in z.peers_capabilities.items():
         # store node name
         peer_name = peers_names[peer.hex]
-        print("Adding node '%s' (%s)" % (peer_name, peer.hex))
+        print("Adding node '%s' (%s)..." % (peer_name, peer.hex))
         capabilities["_name"] = peer_name
 
         # add node names to subscribers
@@ -45,13 +47,13 @@ if __name__ == '__main__':
         peers[peer.hex] = capabilities
 
     # write network description to file
-    print("Writing to file")
+    print("Writing to file...")
     f = open("network.json", "w")
     f.write(json.dumps(peers, indent=4, sort_keys=True))
     f.close()
 
     # shut down ZOCP node
+    print("Closing ZOCP node...")
     z.stop()
-    print("FINISH")
 
 
