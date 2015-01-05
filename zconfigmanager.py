@@ -29,13 +29,13 @@ class ZConfigManagerNode(ZOCP):
         self.logger.info("Discovering ZOCP network...")
         start = time.time()
         while (time.time() - start) < duration:
-            z.run_once(0)
+            self.run_once(0)
 
 
     def build_network_tree(self):
         # create network description
         peers = {}
-        for peer, capabilities in z.peers_capabilities.items():
+        for peer, capabilities in self.peers_capabilities.items():
             # store node name
             peer_name = self.peers_names[peer.hex]
             self.logger.info("Adding node '%s' (%s)..." % (peer_name, peer.hex))
@@ -57,7 +57,7 @@ class ZConfigManagerNode(ZOCP):
     def write(self, filename, tree):
         self.logger.info("Writing to file '%s'..." % filename)
         f = open(filename, "w")
-        f.write(json.dumps(network_tree, indent=4, sort_keys=True))
+        f.write(json.dumps(tree, indent=4, sort_keys=True))
         f.close()
 
 
