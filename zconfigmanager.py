@@ -7,10 +7,12 @@ import socket
 import time
 import json
 
-
 class ZConfigManagerNode(ZOCP):
     def __init__(self, nodename=""):
         self.peers_names = {}
+
+        self.logger = logging.getLogger(nodename)
+        self.logger.setLevel(logging.INFO)
 
         super().__init__()
 
@@ -19,12 +21,12 @@ class ZConfigManagerNode(ZOCP):
 
 
     def stop(self):
-        print("Closing ZOCP node...")
+        self.logger.info("Closing ZOCP node...")
         super().stop()
 
 
     def discover(self, duration = 0.5):
-        print("Discovering ZOCP network...")
+        self.logger.info("Discovering ZOCP network...")
         start = time.time()
         while (time.time() - start) < duration:
             z.run_once(0)
@@ -36,7 +38,7 @@ class ZConfigManagerNode(ZOCP):
         for peer, capabilities in z.peers_capabilities.items():
             # store node name
             peer_name = self.peers_names[peer.hex]
-            print("Adding node '%s' (%s)..." % (peer_name, peer.hex))
+            self.logger.info("Adding node '%s' (%s)..." % (peer_name, peer.hex))
             capabilities["_name"] = peer_name
 
             # add node names to subscribers
@@ -53,7 +55,7 @@ class ZConfigManagerNode(ZOCP):
 
 
     def write(self, filename, tree):
-        print("Writing to file...")
+        self.logger.info("Writing to file '%s'..." % filename)
         f = open(filename, "w")
         f.write(json.dumps(network_tree, indent=4, sort_keys=True))
         f.close()
