@@ -11,7 +11,7 @@ import uuid
 class ZConfigManagerNode(ZOCP):
     def __init__(self, nodename=""):
         self.peers_names = {}
-        self.peers_alternatives = {}
+        self.peers_map = {}
 
         self.logger = logging.getLogger(nodename)
         self.logger.setLevel(logging.INFO)
@@ -40,18 +40,23 @@ class ZConfigManagerNode(ZOCP):
 
 
     def find_peer(self, peer, name):
-        if peer not in self.peers_alternatives:
-            # find a peer by its name, but do not return the same peer if it 
-            # has already been associated with a different original peer id 
-            self.peers_alternatives[peer] = None
-            exclude = self.peers_alternatives.values()
-            for alt_hex, alt_name in self.peers_names.items():
-                alt_peer = uuid.UUID(alt_hex)
-                if alt_name == name and alt_peer not in exclude:
-                    self.peers_alternatives[peer] = alt_peer
-                    break
+        if peer not in self.peers_map:
+            if peer in self.peers_capabilities.keys():
+                # if a peer exists by the same id, use that
+                self.peers_map[peer] = peer
 
-        return self.peers_alternatives[peer]
+            else:
+                # find a peer by its name, but do not return the same peer if it
+                # has already been associated with a different original peer id
+                self.peers_map[peer] = None
+                exclude = self.peers_map.values()
+                for alt_hex, alt_name in self.peers_names.items():
+                    alt_peer = uuid.UUID(alt_hex)
+                    if alt_name == name and alt_peer not in exclude:
+                        self.peers_map[peer] = alt_peer
+                        break
+
+        return self.peers_map[peer]
 
 
     def build_network_tree(self):
@@ -78,19 +83,17 @@ class ZConfigManagerNode(ZOCP):
 
     def restore_network_tree(self, tree):
         # restore network from description
-        peers = self.peers_capabilities
         for peer_hex, peer_capabilities in tree.items():
             peer = uuid.UUID(peer_hex)
             peer_name = peer_capabilities["_name"]
             self.logger.info("Looking for node '%s' (%s)..." % (peer_name, peer_hex))
-            if peer not in peers.keys():
-                # if the peer has been restarted it will have a different id
-                peer = self.find_peer(peer, peer_name)
-                if peer:
-                    self.logger.info("Alternative for node '%s' found: %s" % (peer_name, peer.hex))
-                else:
-                    self.logger.warning("Node '%s' not found." % peer_name)
-                    continue
+
+            peer = self.find_peer(peer, peer_name)
+            if peer and peer_hex != peer.hex:
+                self.logger.info("Alternative for node '%s' found: %s" % (peer_name, peer.hex))
+            else:
+                self.logger.warning("Node '%s' not found." % peer_name)
+                continue
 
             # remove name from capabilities
             peer_capabilities.pop("_name", None)
@@ -102,14 +105,13 @@ class ZConfigManagerNode(ZOCP):
                         subscriber_peer = uuid.UUID(s[0])
                         subscriber_sensor = s[1]
                         subscriber_name = s[2]
-                        if subscriber_peer not in peers.keys():
-                            # if the peer has been restarted it will have a different id
-                            subscriber_peer = self.find_peer(subscriber_peer, subscriber_name)
-                            if subscriber_peer:
-                                self.logger.info("Alternative for subscriber '%s' found: %s" % (subscriber_name, subscriber_peer.hex))
-                            else:
-                                self.logger.warning("Subscriber '%s' not found." % subscriber_name)
-                                continue
+
+                        subscriber_peer = self.find_peer(subscriber_peer, subscriber_name)
+                        if subscriber_peer and s[0] != subscriber_peer.hex:
+                            self.logger.info("Alternative for subscriber '%s' found: %s" % (subscriber_name, subscriber_peer.hex))
+                        else:
+                            self.logger.warning("Subscriber '%s' not found." % subscriber_name)
+                            continue
 
                         # restore subscription
                         self.signal_subscribe(peer, c, subscriber_peer, subscriber_sensor)
