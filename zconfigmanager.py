@@ -11,6 +11,7 @@ import uuid
 class ZConfigManagerNode(ZOCP):
     def __init__(self, nodename=""):
         self.peers_names = {}
+        self.peers_alternatives = {}
 
         self.logger = logging.getLogger(nodename)
         self.logger.setLevel(logging.INFO)
@@ -38,12 +39,19 @@ class ZConfigManagerNode(ZOCP):
         self.peers_names[peer.hex] = name
 
 
-    def find_peer_by_name(self, name):
-        for peer_hex, peer_name in self.peers_names.items():
-            if peer_name == name:
-                return uuid.UUID(peer_hex)
+    def find_peer(self, peer, name):
+        if peer not in self.peers_alternatives:
+            # find a peer by its name, but do not return the same peer if it 
+            # has already been associated with a different original peer id 
+            self.peers_alternatives[peer] = None
+            exclude = self.peers_alternatives.values()
+            for alt_hex, alt_name in self.peers_names.items():
+                alt_peer = uuid.UUID(alt_hex)
+                if alt_name == name and alt_peer not in exclude:
+                    self.peers_alternatives[peer] = alt_peer
+                    break
 
-        return None
+        return self.peers_alternatives[peer]
 
 
     def build_network_tree(self):
@@ -77,7 +85,7 @@ class ZConfigManagerNode(ZOCP):
             self.logger.info("Looking for node '%s' (%s)..." % (peer_name, peer_hex))
             if peer not in peers.keys():
                 # if the peer has been restarted it will have a different id
-                peer = self.find_peer_by_name(peer_name)
+                peer = self.find_peer(peer, peer_name)
                 if peer:
                     self.logger.info("Alternative for node '%s' found: %s" % (peer_name, peer.hex))
                 else:
@@ -96,7 +104,7 @@ class ZConfigManagerNode(ZOCP):
                         subscriber_name = s[2]
                         if subscriber_peer not in peers.keys():
                             # if the peer has been restarted it will have a different id
-                            subscriber_peer = self.find_peer_by_name(subscriber_name)
+                            subscriber_peer = self.find_peer(subscriber_peer, subscriber_name)
                             if subscriber_peer:
                                 self.logger.info("Alternative for subscriber '%s' found: %s" % (subscriber_name, subscriber_peer.hex))
                             else:
