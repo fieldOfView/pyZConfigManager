@@ -10,15 +10,14 @@ import uuid
 
 class ZConfigManagerNode(ZOCP):
     def __init__(self, nodename=""):
+        super(ZConfigManagerNode, self).__init__(nodename)
+
         self.peers_names = {}
         self.peers_map = {}
 
         self.logger = logging.getLogger(nodename)
         self.logger.setLevel(logging.INFO)
 
-        super(ZConfigManagerNode, self).__init__()
-
-        self.set_name(nodename)
         self.start()
 
 
