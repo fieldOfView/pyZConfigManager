@@ -113,7 +113,7 @@ class ZConfigManagerNode(ZOCP):
                             continue
 
                         # restore subscription
-                        self.signal_subscribe(peer, c, subscriber_peer, subscriber_sensor)
+                        self.signal_subscribe(subscriber_peer, subscriber_sensor, peer, c)
 
                     # remove subscribers from capabilities
                     peer_capabilities[c].pop("subscribers", None)
